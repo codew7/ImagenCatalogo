@@ -56,7 +56,7 @@
                     const response = await fetch("https://sdk.photoroom.com/v1/segment", {
                         method: "POST",
                         headers: {
-                            "x-api-key": "1bd9c1dc3df6576762478dd3d1ce80e8fd71bc07"  // Reemplázalo con tu API Key
+                            "x-api-key": "sandbox_1bd9c1dc3df6576762478dd3d1ce80e8fd71bc07"  // Reemplázalo con tu API Key
                         },
                         body: formData
                     });
@@ -76,9 +76,9 @@
 
                         // Datos para la subida a GitHub
                         const githubToken = "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";  // Reemplázalo con tu nuevo token
-                        const owner = "Codew7";
+                        const owner = "codew7";
                         const repo = "ImagenCatalogo";
-                        const path = `/${filename}.png`;
+                        const path = `/{filename}.png`;
 
                         const data = {
                             message: "Subida de imagen procesada",
