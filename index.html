@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Captura y Procesa Imagen</title>
+</head>
+<body>
+  <h1>Captura, Procesa y Sube Imagen</h1>
+  <video id="video" width="320" height="240" autoplay></video>
+  <br>
+  <button id="capture">Capturar Imagen</button>
+  <br>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <br>
+  <input type="text" id="filename" placeholder="Nombre del archivo">
+  <button id="process">Procesar y Subir</button>
+
+  <script>
+    // Acceso a la cámara
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        console.error("Error accediendo a la cámara:", err);
+      });
+
+    // Captura la imagen al presionar el botón
+    document.getElementById('capture').addEventListener('click', () => {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      alert("Imagen capturada. Ingresa el nombre y presiona Procesar.");
+    });
+
+    // Procesa y sube la imagen
+    document.getElementById('process').addEventListener('click', async () => {
+      const filename = document.getElementById('filename').value;
+      if (!filename) {
+        alert("Por favor, ingresa el nombre del archivo.");
+        return;
+      }
+      // Convierte el canvas a Blob
+      canvas.toBlob(async (blob) => {
+        // Llama a la API de remove.bg para remover el fondo.
+        // Nota: Esto puede requerir configuración CORS o un servidor intermedio.
+        const formData = new FormData();
+        formData.append('image_file', blob, 'captura.png');
+        
+        try {
+          const removeBgResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
+            method: "POST",
+            headers: {
+              "X-Api-Key": "TU_REMOVE_BG_API_KEY"  // Reemplaza con tu API key
+            },
+            body: formData
+          });
+          
+          if (!removeBgResponse.ok) {
+            throw new Error("Error en remove.bg API: " + removeBgResponse.statusText);
+          }
+          
+          // Obtiene la imagen procesada como Blob
+          const processedBlob = await removeBgResponse.blob();
+          
+          // Convierte la imagen a Base64 para enviarla a GitHub
+          const reader = new FileReader();
+          reader.readAsDataURL(processedBlob);
+          reader.onloadend = async function() {
+            let base64data = reader.result;
+            base64data = base64data.split(',')[1]; // Extrae solo la parte en Base64
+
+            // Datos para la subida a GitHub
+            const githubToken = "TU_GITHUB_TOKEN"; // Reemplaza con tu token de GitHub
+            const owner = "tu_usuario";             // Tu usuario de GitHub
+            const repo = "tu_repositorio";          // Tu repositorio
+            const path = `ruta/del/archivo/${filename}.png`; // Ruta y nombre del archivo
+
+            const data = {
+              message: "Subida de imagen procesada",
+              content: base64data
+            };
+
+            const githubResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+              method: "PUT",
+              headers: {
+                "Authorization": "token " + githubToken,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(data)
+            });
+
+            if (githubResponse.ok) {
+              alert("Imagen procesada y subida a GitHub exitosamente!");
+            } else {
+              alert("Error al subir a GitHub: " + githubResponse.statusText);
+            }
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Error: " + error.message);
+        }
+      }, 'image/png');
+    });
+  </script>
+</body>
+</html>
