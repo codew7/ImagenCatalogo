@@ -1,110 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Captura y Procesa Imagen</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captura y Procesamiento de Imagen</title>
 </head>
 <body>
-  <h1>Captura, Procesa y Sube Imagen</h1>
-  <video id="video" width="320" height="240" autoplay></video>
-  <br>
-  <button id="capture">Capturar Imagen</button>
-  <br>
-  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
-  <br>
-  <input type="text" id="filename" placeholder="Nombre del archivo">
-  <button id="process">Procesar y Subir</button>
-
-  <script>
-    // Acceso a la cámara
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const context = canvas.getContext('2d');
+    <h1>Capturar, Procesar y Subir Imagen</h1>
     
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(err => {
-        console.error("Error accediendo a la cámara:", err);
-      });
+    <video id="video" width="320" height="240" autoplay></video>
+    <br>
+    <button id="capture">Capturar Imagen</button>
+    <br>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+    <br>
+    <input type="text" id="filename" placeholder="Nombre del archivo">
+    <button id="process">Procesar y Subir</button>
 
-    // Captura la imagen al presionar el botón
-    document.getElementById('capture').addEventListener('click', () => {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      alert("Imagen capturada. Ingresa el nombre y presiona Procesar.");
-    });
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
 
-    // Procesa y sube la imagen
-    document.getElementById('process').addEventListener('click', async () => {
-      const filename = document.getElementById('filename').value;
-      if (!filename) {
-        alert("Por favor, ingresa el nombre del archivo.");
-        return;
-      }
-      // Convierte el canvas a Blob
-      canvas.toBlob(async (blob) => {
-        // Llama a la API de remove.bg para remover el fondo.
-        // Nota: Esto puede requerir configuración CORS o un servidor intermedio.
-        const formData = new FormData();
-        formData.append('image_file', blob, 'captura.png');
-        
-        try {
-          const removeBgResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
-            method: "POST",
-            headers: {
-              "X-Api-Key": "dQ9d8dvt7UkCpGAQkFiRRAqR"  // Reemplaza con tu API key
-            },
-            body: formData
-          });
-          
-          if (!removeBgResponse.ok) {
-            throw new Error("Error en remove.bg API: " + removeBgResponse.statusText);
-          }
-          
-          // Obtiene la imagen procesada como Blob
-          const processedBlob = await removeBgResponse.blob();
-          
-          // Convierte la imagen a Base64 para enviarla a GitHub
-          const reader = new FileReader();
-          reader.readAsDataURL(processedBlob);
-          reader.onloadend = async function() {
-            let base64data = reader.result;
-            base64data = base64data.split(',')[1]; // Extrae solo la parte en Base64
+        // Acceder a la cámara trasera
+        navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "environment" } 
+        })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.error("Error accediendo a la cámara trasera:", err);
+        });
 
-            // Datos para la subida a GitHub
-            const githubToken = "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"; // Reemplaza con tu token de GitHub
-            const owner = "codew7";             // Tu usuario de GitHub
-            const repo = "ImagenCatalogo";          // Tu repositorio
-            //const path = `ruta/del/archivo/${filename}.png`; // Ruta y nombre del archivo
-            const path = `/${filename}.png`; // Ruta y nombre del archivo
+        // Capturar imagen del video
+        document.getElementById('capture').addEventListener('click', () => {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            alert("Imagen capturada. Ingresa el nombre y presiona Procesar.");
+        });
 
-            const data = {
-              message: "Subida de imagen procesada",
-              content: base64data
-            };
-
-            const githubResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-              method: "PUT",
-              headers: {
-                "Authorization": "token " + githubToken,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify(data)
-            });
-
-            if (githubResponse.ok) {
-              alert("Imagen procesada y subida a GitHub exitosamente!");
-            } else {
-              alert("Error al subir a GitHub: " + githubResponse.statusText);
+        // Procesar y subir la imagen a GitHub
+        document.getElementById('process').addEventListener('click', async () => {
+            const filename = document.getElementById('filename').value;
+            if (!filename) {
+                alert("Por favor, ingresa el nombre del archivo.");
+                return;
             }
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          alert("Error: " + error.message);
-        }
-      }, 'image/png');
-    });
-  </script>
+
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('image_file', blob, 'captura.jpg');
+
+                try {
+                    // Llamar a la API de PhotoRoom
+                    const response = await fetch("https://sdk.photoroom.com/v1/segment", {
+                        method: "POST",
+                        headers: {
+                            "x-api-key": "1bd9c1dc3df6576762478dd3d1ce80e8fd71bc07"  // Reemplázalo con tu API Key
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Error en PhotoRoom API: " + response.statusText);
+                    }
+
+                    // Obtener la imagen sin fondo
+                    const processedBlob = await response.blob();
+
+                    // Convertir la imagen a Base64 para subirla a GitHub
+                    const reader = new FileReader();
+                    reader.readAsDataURL(processedBlob);
+                    reader.onloadend = async function () {
+                        let base64data = reader.result.split(',')[1];
+
+                        // Datos para la subida a GitHub
+                        const githubToken = "TU_GITHUB_TOKEN";  // Reemplázalo con tu nuevo token
+                        const owner = "Codew7";
+                        const repo = "ImagenCatalogo";
+                        const path = `imagenes/${filename}.png`;
+
+                        const data = {
+                            message: "Subida de imagen procesada",
+                            content: base64data
+                        };
+
+                        const githubResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                            method: "PUT",
+                            headers: {
+                                "Authorization": "token " + githubToken,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        if (githubResponse.ok) {
+                            alert("Imagen procesada y subida a GitHub exitosamente!");
+                        } else {
+                            alert("Error al subir a GitHub: " + githubResponse.statusText);
+                        }
+                    };
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("Error: " + error.message);
+                }
+            }, 'image/jpeg');
+        });
+    </script>
 </body>
 </html>
